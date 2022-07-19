@@ -7,6 +7,7 @@ pragma solidity ^0.4.24;
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 // Also must import the FlightSuretyData contract
+// NOTE: Another option is to use an interface, but I have opted for an import instead
 
 import "./FlightSuretyData.sol";
 
@@ -56,6 +57,7 @@ contract FlightSuretyApp {
     event FundedLines(address account, uint256 amount);
     event PurchasedInsurance(address airline, address account, uint256 amount);
     event Withdrew(address account , uint256 amount);
+    event CreditedInsurees(address airline, address passenger, uint256 credit);
 
 
     /********************************************************************************************/
@@ -301,11 +303,11 @@ contract FlightSuretyApp {
     {
         require(flightSuretyData.getPassengerCredit(msg.sender) > 0, "No balance to withdraw");
 
-        uint256 withdraw_value = flightSuretyData.withdraw(msg.sender);
+        uint256 withdrawalValue = flightSuretyData.withdraw(msg.sender);
         // Transfer credit to passenger wallet
-        msg.sender.transfer(withdraw_value);
+        msg.sender.transfer(withdrawalValue);
         
-        emit Withdrew(msg.sender,withdraw_value);
+        emit Withdrew(msg.sender, withdrawalValue);
     }
 
    /**
@@ -328,13 +330,28 @@ contract FlightSuretyApp {
     function processFlightStatus
                                 (
                                     address airline,
-                                    string memory flight,
+                                    string  flight,
                                     uint256 timestamp,
                                     uint8 statusCode
                                 )
-                                internal
-                                requireIsOperational
+                                public
+                                
+                             
     {
+        address passenger;
+        uint256 amountPaid;
+        (passenger,amountPaid) = flightSuretyData.getInsuredPassengerAmount(airline);
+
+        require((passenger != address(0)) && (airline != address(0)), "'accounts' must be  valid address.");
+        require(amountPaid > 0, "Passenger is not insured");
+
+        // Only credit if flight delay is airline fault (airline late and late due to technical)
+        if((statusCode == STATUS_CODE_LATE_AIRLINE) || (statusCode == STATUS_CODE_LATE_TECHNICAL)){
+            uint256 credit = amountPaid.mul(3).div(2);
+
+            flightSuretyData.creditInsurees(airline, passenger, credit);
+            emit CreditedInsurees(airline, passenger, credit);
+        }
     }
 
 
@@ -369,7 +386,7 @@ contract FlightSuretyApp {
     uint256 public constant REGISTRATION_FEE = 1 ether;
 
     // Number of oracles that must respond for valid status
-    uint256 private constant MIN_RESPONSES = 3;
+    uint256 private constant MIN_RESPONSES = 2;
 
 
     struct Oracle {
@@ -532,3 +549,26 @@ contract FlightSuretyApp {
 // endregion
 
 }   
+
+// Interface to FlightSuretyData.sol
+// NOTE: I have imported the FlightSuretyData.sol contract so this is not needed
+// contract FlightSuretyData{
+//     function registerAirline(address account, bool isOperational) external;
+//     function multiCallsLength() external returns(uint);
+//     function getAirlineOperatingStatus(address account) external returns(bool);
+//     function setAirlineOperatingStatus(address account, bool status) external;
+//     function registerInsurance(address airline, address passenger, uint256 amount) external;
+//     function creditInsurees(address airline, address passenger, uint256 amount) external;
+//     function getInsuredPassengerAmount(address airline) external returns(address, uint256);
+//     function getPassengerCredit(address passenger) external returns(uint256);
+//     function getAirlineRegistrationStatus(address account) external  returns(bool);
+//     function fundAirline(address airline, uint256 amount) external;
+//     function getAirlineFunding(address airline) external returns(uint256);
+//     function withdraw(address passenger) external returns(uint256);
+//     function getVoteCounter(address account) external  returns(uint);
+//     function setVoteCounter(address account, uint vote) external;
+//     function getVoterStatus(address voter) external returns(bool);
+//     function addVoterCounter(address airline, uint count) external;
+//     function resetVoteCounter(address account) external;
+//     function addVoters(address voter) external;
+// }   
