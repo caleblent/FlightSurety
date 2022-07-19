@@ -73,13 +73,13 @@ contract FlightSuretyApp {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-    event RegisteredAirline(address account);
-    event FundedLines(address account, uint256 amount);
-    event PurchasedInsurance(address airline, address account, uint256 amount);
-    event Withdrew(address account , uint256 amount);
-    event CreditedInsurees(address airline, address passenger, uint256 credit);
-    event RegisteredFlight(bytes32 flightKey, address airline);
-    event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
+    // event RegisteredAirline(address account);
+    // event FundedLines(address account, uint256 amount);
+    // event PurchasedInsurance(address airline, address account, uint256 amount);
+    // event Withdrew(address account , uint256 amount);
+    // event CreditedInsurees(address airline, address passenger, uint256 credit);
+    // event RegisteredFlight(bytes32 flightKey, address airline);
+    // event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
 
 
     /********************************************************************************************/
@@ -111,14 +111,45 @@ contract FlightSuretyApp {
     }
 
     // self explanatory modifiers
-    modifier requireAirlineIsRegistered(address airline)
-    {
+    modifier requireAirlineIsRegistered(address airline) {
         require(flightSuretyData.isAirlineRegistered(airline), "Airline is not registered");
         _;
     }
-    modifier requireAirlineIsNotRegistered(address airline)
-    {
+    modifier requireAirlineIsNotRegistered(address airline) {
         require(!flightSuretyData.isAirlineRegistered(airline), "Airline is already registered");
+        _;
+    }
+    modifier requireAirlineIsFunded(address airline) {
+        require(flightSuretyData.isAirlineFunded(airline), "Airline is not funded.");
+        _;
+    }
+    modifier requireAirlineIsNotFunded(address airline) {
+        require(!flightSuretyData.isAirlineFunded(airline), "Airline is already funded.");
+        _;
+    }
+    modifier requireSufficientFunding(uint256 amount) {
+        require(msg.value >= amount, "Insufficient Funds.");
+        _;
+    }
+    modifier calculateRefund() {
+        _;
+        uint refund = msg.value - AIRLINE_REGISTRATION_FEE;
+        msg.sender.transfer(refund);
+    }
+    modifier requireFlightIsRegistered(bytes32 flightKey) {
+        require(flightSuretyData.isFlightRegistered(flightKey), "Flight is not registered.");
+        _;
+    }
+    modifier requireFlightIsNotLanded(bytes32 flightKey) {
+        require(!flightSuretyData.isFlightLanded(flightKey), "Flight has already landed");
+        _;
+    }
+    modifier requirePassengerNotInsuredForFlight(bytes32 flightKey, address passenger) {
+        require(!flightSuretyData.isPassengerInsuredForFlight(flightKey, passenger), "Passenger is already insured for flight");
+        _;
+    }
+    modifier requireLessThanMaxInsurance() {
+        require(msg.value <= MAX_INSURANCE_PLAN, "Value exceeds max insurance plan.");
         _;
     }
 
