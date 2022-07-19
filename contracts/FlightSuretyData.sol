@@ -193,6 +193,12 @@ contract FlightSuretyData {
         return false;
     }
 
+    // Other useful functions
+    function isAirline (address account) external view returns (bool) {
+        require(account != address(0), "'account' must be a valid address");
+        return airlines[account].isRegistered;
+    }
+
    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
@@ -209,25 +215,43 @@ contract FlightSuretyData {
         emit AirlineRegistered(airline);
     }
 
-    function isAirline (address account) external view returns (bool) {
-        require(account != address(0), "'account' must be a valid address");
-        return airlines[account].isRegistered;
+    /**
+    * @dev Initial funding for the insurance. Unless there are too many delayed flights
+    *      resulting in insurance payouts, the contract should be self-sustaining
+    */
+    function fundAirline(address airline, uint256 amount)
+        external
+        requireIsOperational
+        requireAirlineIsRegistered(airline)
+        requireAirlineIsNotFunded(airline)
+        returns(bool)
+    {
+        airlines[airline].isFunded = true;
+        airlines[airline].funds = airlines[airline].funds.add(amount);
+        fundedAirlineCount = fundedAirlineCount.add(1);
+        emit AirlineFunded(airline);
+        return airlines[airline].isFunded;
     }
 
-    // Insurance payout functions
-
-   /**
+    /**
     * @dev Buy insurance for a flight
-    *
-    */   
-    // function buy
-    //                         (                             
-    //                         )
-    //                         external
-    //                         payable
-    // {
+    */
+    function buyInsurance (bytes32 flightKey, address passenger, uint256 amount, uint256 payout)
+        external
+        payable
+        requireIsOperational
+    {
+        require(isFlightRegistered(flightKey), "Flight is already registered");
+        require(!isFlightLanded(flightKey), "Flight has already landed");
 
-    // }
+        flightInsuranceClaims[flightKey].push(InsuranceClaim(
+            passenger,
+            amount,
+            payout,
+            false
+        ));
+        emit PassengerInsured(flightKey, passenger, amount, payout);
+    }
 
     /**
      *  @dev Credits payouts to insurees
@@ -303,6 +327,6 @@ contract FlightSuretyData {
     *
     */
     function() external payable {}
-    
+
 }
 
