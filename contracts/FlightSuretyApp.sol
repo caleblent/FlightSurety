@@ -269,62 +269,26 @@ contract FlightSuretyApp {
         flightSuretyData.processFlightStatus(airline, flight, timestamp, statusCode);
     }
 
-
-
     /**
-    * @dev Approve registration of fifth and subsequent airlines
+    * @dev Generate a request for oracles to fetch flight information
     *
-    */
-
-    function approveAirlineRegistration(address airline, bool airline_vote) public requireIsOperational {
-        
-        require(!flightSuretyData.getAirlineRegistrationStatus(airline),"airline already registered");
-        require(flightSuretyData.getAirlineOperatingStatus(msg.sender),"airline not operational");
-        
-        if(airline_vote == true){
-            // Check and avoid duplicate vote for the same airline
-            bool isDuplicate = false;
-            uint incrementVote = 1;
-            isDuplicate = flightSuretyData.getVoterStatus(msg.sender);
-
-            // Check to avoid registering same airline multiple times
-            require(!isDuplicate, "Caller has already voted.");
-            flightSuretyData.addVoters(msg.sender);
-            flightSuretyData.addVoterCounter(airline, incrementVote);
-
-            }
-        vote_status = true;
-    }
-
-    /**
-    * @dev Initial funding for the insurance. Unless there are too many delayed flights
-    *      resulting in insurance payouts, the contract should be self-sustaining
-    *
-    */ 
-
-    function fund
-                (
-                )
-                public
-                payable
-                requireIsOperational
+    */  
+    function fetchFlightStatus (address airline, string flight, uint256 timestamp, bytes32 flightKey)
+        external
+        requireFlightIsRegistered(flightKey)
+        requireFlightIsNotLanded(flightKey)
     {
-        // vreify fund is 10 ether
-        require(msg.value == 10 ether,"Ether should be 10");
+        uint8 index = getRandomIndex(msg.sender);
 
-        // Make sure airline has not yet been funded
-        require(!flightSuretyData.getAirlineOperatingStatus(msg.sender), "Airline is already funded");
+        // Generate a unique key for storing the request
+        bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
+        oracleResponses[key] = ResponseInfo({requester: msg.sender, isOpen: true});
 
-        // Save in contract instead
-        //contractOwner.transfer(msg.value); 
-
-        flightSuretyData.fundAirline(msg.sender, msg.value);
-
-        flightSuretyData.setAirlineOperatingStatus(msg.sender, true);
-
-        emit FundedLines(msg.sender, msg.value);
-        
+        emit OracleRequest(index, airline, flight, timestamp);
     }
+
+
+
 
     /**
     * @dev Buy insurance for a flight
