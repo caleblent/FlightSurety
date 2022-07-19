@@ -155,13 +155,13 @@ contract FlightSuretyData {
     // }
 
     // Vote struct
-    function getVoteCounter(address account) external requireIsOperational returns (uint) {
+    function getVoteCounter(address account) external view requireIsOperational returns (uint) {
         return voteCount[account];
     }
     function resetVoteCounter(address account) external requireIsOperational {
         delete voteCount[account];
     }
-    function getVoterStatus(address voter) external requireIsOperational returns (bool) {
+    function getVoterStatus(address voter) external view requireIsOperational returns (bool) {
         return votes[voter].status;
     }
     function addVoters(address voter) external {
@@ -178,7 +178,7 @@ contract FlightSuretyData {
     function setMultiCalls(address account) private {
         multiCalls.push(account);
     }
-    function multiCallsLength() external requireIsOperational returns(uint) {
+    function multiCallsLength() external view requireIsOperational returns(uint) {
         return multiCalls.length;
     }
 
@@ -200,7 +200,7 @@ contract FlightSuretyData {
         });
     }
 
-    function getAirlineFunding(address airline) external returns(uint256) {
+    function getAirlineFunding(address airline) external view returns(uint256) {
         return funds[airline].amount;
     }
 
@@ -295,12 +295,12 @@ contract FlightSuretyData {
         return withdrawalAmount;
     }
 
-    function getInsuredPassengerAmount(address airline) external requireIsOperational 
+    function getInsuredPassengerAmount(address airline) external view requireIsOperational 
     returns(address, uint256) {
         return (insurances[airline].passenger, insurances[airline].amount);
     }
 
-    function getPassengerCredit(address passenger) external requireIsOperational
+    function getPassengerCredit(address passenger) external view requireIsOperational
     returns(uint256) {
         return balances[passenger];
     }
