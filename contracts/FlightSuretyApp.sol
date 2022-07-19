@@ -42,7 +42,7 @@ contract FlightSuretyApp {
 
     struct Flight {
         bool isRegistered;
-        // uint8 statusCode;
+        uint8 statusCode;
         uint256 updatedTimestamp;        
         address airline;
     }
@@ -58,6 +58,8 @@ contract FlightSuretyApp {
     event PurchasedInsurance(address airline, address account, uint256 amount);
     event Withdrew(address account , uint256 amount);
     event CreditedInsurees(address airline, address passenger, uint256 credit);
+    event RegisteredFlight(bytes32 flightKey, address airline);
+    event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
 
 
     /********************************************************************************************/
@@ -314,13 +316,16 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     *
     */  
-    function registerFlight
-                                (
-                                )
-                                external
-                                requireIsOperational
+    function registerFlight (bytes32 flightCode, address _airline) external requireIsOperational
     {
+        flights[flightCode] = Flight({
+            isRegistered: true,
+            statusCode: STATUS_CODE_UNKNOWN,
+            updatedTimestamp: now,
+            airline: _airline
+        });
 
+        emit RegisteredFlight(flightCode, _airline);
     }
     
    /**
@@ -330,28 +335,36 @@ contract FlightSuretyApp {
     function processFlightStatus
                                 (
                                     address airline,
-                                    string  flight,
+                                    string memory flight,
                                     uint256 timestamp,
                                     uint8 statusCode
                                 )
-                                public
-                                
-                             
+                                internal
+                                requireIsOperational
     {
-        address passenger;
-        uint256 amountPaid;
-        (passenger,amountPaid) = flightSuretyData.getInsuredPassengerAmount(airline);
-
-        require((passenger != address(0)) && (airline != address(0)), "'accounts' must be  valid address.");
-        require(amountPaid > 0, "Passenger is not insured");
-
-        // Only credit if flight delay is airline fault (airline late and late due to technical)
-        if((statusCode == STATUS_CODE_LATE_AIRLINE) || (statusCode == STATUS_CODE_LATE_TECHNICAL)){
-            uint256 credit = amountPaid.mul(3).div(2);
-
-            flightSuretyData.creditInsurees(airline, passenger, credit);
-            emit CreditedInsurees(airline, passenger, credit);
+        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+        if (flights[flightKey].statusCode == 0) {
+            flights[flightKey].statusCode = statusCode;
+            if (statusCode == 20) {
+                // credit insurees
+            }
         }
+        emit ProcessedFlightStatus(flightKey, statusCode);
+
+        // address passenger;
+        // uint256 amountPaid;
+        // (passenger,amountPaid) = flightSuretyData.getInsuredPassengerAmount(airline);
+
+        // require((passenger != address(0)) && (airline != address(0)), "'accounts' must be  valid address.");
+        // require(amountPaid > 0, "Passenger is not insured");
+
+        // // Only credit if flight delay is airline fault (airline late and late due to technical)
+        // if((statusCode == STATUS_CODE_LATE_AIRLINE) || (statusCode == STATUS_CODE_LATE_TECHNICAL)){
+        //     uint256 credit = amountPaid.mul(3).div(2);
+
+        //     flightSuretyData.creditInsurees(airline, passenger, credit);
+        //     emit CreditedInsurees(airline, passenger, credit);
+        // }
     }
 
 
@@ -363,6 +376,7 @@ contract FlightSuretyApp {
                             uint256 timestamp                            
                         )
                         external
+                        requireIsOperational
     {
         uint8 index = getRandomIndex(msg.sender);
 
