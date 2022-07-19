@@ -16,17 +16,11 @@ import "./FlightSuretyData.sol";
 /************************************************** */
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
-    using SafeMath for uint8; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
-
-    // Object that we will use to interact with the FlightSuretyApp contract.
-    FlightSuretyData flightSuretyData; 
+    using SafeMath for uint8; // Allow SafeMath functions to be called for all uint8 types (similar to "prototype" in Javascript)
 
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
-
-    uint constant M = 4;
-    bool private vote_status = false;
 
     // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
@@ -36,18 +30,44 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
-    address private contractOwner;          // Account used to deploy contract
+    // Insurace Constants
+    uint256 AIRLINE_REGISTRATION_FEE = 10 ether;
+    uint256 MAX_INSURANCE_PLAN = 1 ether;
+    uint256 INSURANCE_PAYOUT = 150; // Must divide by 100 to get percentage payout
 
-    bool private operational = true;        // Can be set to false to pause contract operations
+    // Airline Registration Helpers
+    uint256 AIRLINE_VOTING_THRESHOLD = 4;
+    uint256 AIRLINE_REGISTRATION_REQUIRED_VOTES = 2;
 
-    struct Flight {
+    // Account used to deploy contract
+    address private contractOwner;
+
+    // Can be set to false to pause contract operations
+    bool private operational = true;
+
+    // Airlines
+    struct PendingAirline {
         bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;        
-        address airline;
+        bool isFunded;
     }
 
-    mapping(bytes32 => Flight) private flights;
+    mapping(address => address[]) public pendingAirlines;
+
+    // Object that we will use to interact with the FlightSuretyApp contract.
+    FlightSuretyData flightSuretyData; 
+
+    /********************************************************************************************/
+    /*                                       CONSTRUCTOR                                        */
+    /********************************************************************************************/
+
+    /**
+    * @dev Contract constructor
+    *
+    */
+    constructor(address data) public {
+        contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyData(data);
+    }
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -93,42 +113,13 @@ contract FlightSuretyApp {
     // self explanatory modifiers
     modifier requireAirlineIsRegistered(address airline)
     {
-        require(flightSuretyData.getAirlineRegistrationStatus(airline), "Airline is not registered");
+        require(flightSuretyData.isAirlineRegistered(airline), "Airline is not registered");
         _;
     }
     modifier requireAirlineIsNotRegistered(address airline)
     {
-        require(!flightSuretyData.getAirlineRegistrationStatus(airline), "Airline is already registered");
+        require(!flightSuretyData.isAirlineRegistered(airline), "Airline is already registered");
         _;
-    }
-    modifier requireAirlineIsOperational(address airline)
-    {
-        require(flightSuretyData.getAirlineOperatingStatus(airline), "Airline is not operational");
-        _;
-    }
-    // modifier requireAirlineIsNotOperational(address airline)
-    // {
-    //     require(!flightSuretyData.getAirlineOperatingStatus(airline), "Airline is already operational");
-    //     _;
-    // }
-
-    /********************************************************************************************/
-    /*                                       CONSTRUCTOR                                        */
-    /********************************************************************************************/
-
-    /**
-    * @dev Contract constructor
-    *
-    */
-    constructor
-                                (
-                                    address dataContract
-                                ) 
-                                public 
-    {
-        contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyData(dataContract);
-        flightSuretyData.registerAirline(contractOwner, true);
     }
 
     /********************************************************************************************/
