@@ -39,7 +39,7 @@ contract FlightSuretyData {
     mapping (address => uint) private voteCount;
     mapping (address => uint256) private authorizedCaller;
     mapping (address => uint256) balances;
-    // address[] multiCalls = new address[](0);
+    address[] multiCalls = new address[](0);
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -87,6 +87,17 @@ contract FlightSuretyData {
     modifier requireContractOwner()
     {
         require(msg.sender == contractOwner, "Caller is not contract owner");
+        _;
+    }
+
+    modifier requireAirlineIsRegistered(address airline)
+    {
+        require(airlines[airline].isRegistered, "Airline is not registered");
+        _;
+    }
+    modifier requireAirlineIsNotRegistered(address airline)
+    {
+        require(!airlines[airline].isRegistered, "Airline is already registered");
         _;
     }
 
@@ -163,6 +174,14 @@ contract FlightSuretyData {
         voteCount[airline] = vote.add(count);
     }
 
+    // multiCalls
+    function setMultiCalls(address account) private {
+        multiCalls.push(account);
+    }
+    function multiCallsLength() external requireIsOperational returns(uint) {
+        return multiCalls.length;
+    }
+
     // Insurance Registration
     function registerInsurance(address airline, address passenger, uint256 amount) external requireIsOperational {
         insurances[airline] = Insurance({
@@ -204,21 +223,23 @@ contract FlightSuretyData {
     function registerAirline
                             (   
                                 address account,
-                                bool isOperational
+                                bool _isOperational
                             )
                             external
                             requireIsOperational
     {
         // passes data to the private function, which handles it
-        _registerAirline(account, isOperational);
+        _registerAirline(account, _isOperational);
     }
 
     // handles the airline registration
-    function _registerAirline (address account, bool isOperational) private {
+    function _registerAirline (address account, bool _isOperational) private {
         airlines[account] = Airline({
             isRegistered: true,
-            isOperational: isOperational
+            isOperational: _isOperational
         });
+
+        setMultiCalls(account);
     }
 
     function isAirline (address account) external view returns (bool) {

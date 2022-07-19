@@ -38,14 +38,20 @@ contract FlightSuretyApp {
 
     struct Flight {
         bool isRegistered;
-        uint8 statusCode;
+        // uint8 statusCode;
         uint256 updatedTimestamp;        
         address airline;
     }
 
     mapping(bytes32 => Flight) private flights;
 
- 
+    /********************************************************************************************/
+    /*                                       EVENT DEFINITIONS                                  */
+    /********************************************************************************************/
+
+
+
+
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -73,6 +79,28 @@ contract FlightSuretyApp {
         require(msg.sender == contractOwner, "Caller is not contract owner");
         _;
     }
+
+    // self explanatory modifiers
+    modifier requireAirlineIsRegistered(address airline)
+    {
+        require(flightSuretyData.getAirlineRegistrationStatus(airline), "Airline is not registered");
+        _;
+    }
+    modifier requireAirlineIsNotRegistered(address airline)
+    {
+        require(!flightSuretyData.getAirlineRegistrationStatus(airline), "Airline is already registered");
+        _;
+    }
+    modifier requireAirlineIsOperational(address airline)
+    {
+        require(flightSuretyData.getAirlineOperatingStatus(airline), "Airline is not operational");
+        _;
+    }
+    // modifier requireAirlineIsNotOperational(address airline)
+    // {
+    //     require(!flightSuretyData.getAirlineOperatingStatus(airline), "Airline is already operational");
+    //     _;
+    // }
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -122,15 +150,14 @@ contract FlightSuretyApp {
     * @dev Add an airline to the registration queue
     *
     */   
-    function registerAirline
-                            (   
-                            )
-                            external
-                            requireIsOperational
-                            returns(bool success, uint256 votes, uint256 registeredAirlineCount)
-                            
+    function registerAirline(address airline) 
+        external 
+        requireIsOperational 
+        requireAirlineIsNotRegistered(airline)
+        requireAirlineIsOperational(airline)
+        returns(bool success, uint256 votes, uint256 registeredAirlineCount)
     {
-        
+        require(airline != address(0), "'account' must be a valid address.");
         return (success, 0, 0);
     }
 
