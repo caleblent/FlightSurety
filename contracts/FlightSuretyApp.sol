@@ -70,19 +70,6 @@ contract FlightSuretyApp {
     }
 
     /********************************************************************************************/
-    /*                                       EVENT DEFINITIONS                                  */
-    /********************************************************************************************/
-
-    // event RegisteredAirline(address account);
-    // event FundedLines(address account, uint256 amount);
-    // event PurchasedInsurance(address airline, address account, uint256 amount);
-    // event Withdrew(address account , uint256 amount);
-    // event CreditedInsurees(address airline, address passenger, uint256 credit);
-    // event RegisteredFlight(bytes32 flightKey, address airline);
-    // event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
-
-
-    /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
 
