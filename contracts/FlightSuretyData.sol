@@ -248,6 +248,28 @@ contract FlightSuretyData {
         return airlines[airline].isFunded;
     }
 
+    function registerFlight (bytes32 flightKey, uint256 timestamp, address airline, string memory flightNumber, 
+    string memory departureLocation, string memory arrivalLocation)
+        public
+        payable
+        requireIsOperational
+        requireAirlineIsFunded(airline)
+        requireFlightIsNotRegistered(flightKey)
+    {
+        flights[flightKey] = Flight(
+            true,
+            flightKey,
+            airline,
+            flightNumber,
+            0,
+            timestamp,
+            departureLocation,
+            arrivalLocation
+        );
+        registeredFlights.push(flightKey);
+        emit FlightRegistered(flightKey);
+    }
+
     /**
     * @dev Buy insurance for a flight
     */
