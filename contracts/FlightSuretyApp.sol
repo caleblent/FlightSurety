@@ -192,6 +192,7 @@ contract FlightSuretyApp {
     {
         // If less than required minimum airlines for voting process
         if (flightSuretyData.getRegisteredAirlineCount() <= AIRLINE_VOTING_THRESHOLD) {
+            // sends data to FlightSuretyData contract to be processed
             flightSuretyData.registerAirline(airline, msg.sender);
             return(success, 0, flightSuretyData.getRegisteredAirlineCount());
         } else {
@@ -207,6 +208,7 @@ contract FlightSuretyApp {
             pendingAirlines[airline].push(msg.sender);
             // Check if enough votes to register airline
             if (pendingAirlines[airline].length >= flightSuretyData.getRegisteredAirlineCount().div(AIRLINE_REGISTRATION_REQUIRED_VOTES)) {
+                // sends data to FlightSuretyData contract to be processed
                 flightSuretyData.registerAirline(airline, msg.sender);
                 return(true, pendingAirlines[airline].length, flightSuretyData.getRegisteredAirlineCount());
             }
@@ -227,6 +229,8 @@ contract FlightSuretyApp {
         returns(bool)
     {
         address(uint160(address(flightSuretyData))).transfer(AIRLINE_REGISTRATION_FEE);
+        
+        // sends data to FlightSuretyData contract to be processed
         return flightSuretyData.fundAirline(msg.sender, AIRLINE_REGISTRATION_FEE);
     }
 
@@ -240,6 +244,9 @@ contract FlightSuretyApp {
         requireAirlineIsFunded(msg.sender)
     {
         bytes32 flightKey = getFlightKey(msg.sender, flightNumber, timestamp);
+
+        
+        // sends data to FlightSuretyData contract to be processed
         flightSuretyData.registerFlight(
             flightKey,
             timestamp,
@@ -248,6 +255,18 @@ contract FlightSuretyApp {
             departureLocation,
             arrivalLocation
         );
+    }
+
+    /**
+    * @dev Called after oracle has updated flight status
+    *
+    */
+    function processFlightStatus(address airline, string flight, uint256 timestamp, uint8 statusCode)
+        internal
+        requireIsOperational
+    {
+        // sends data to FlightSuretyData contract to be processed
+        flightSuretyData.processFlightStatus(airline, flight, timestamp, statusCode);
     }
 
 
