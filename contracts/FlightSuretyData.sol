@@ -57,7 +57,6 @@ contract FlightSuretyData {
     constructor () public 
     {
         contractOwner = msg.sender;
-        // airlines[airline] = Airline(true, false, 0);
     }
 
     /********************************************************************************************/
