@@ -287,6 +287,25 @@ contract FlightSuretyApp {
         emit OracleRequest(index, airline, flight, timestamp);
     }
 
+    function buyInsurance (bytes32 flightKey)
+        public
+        payable
+        requireIsOperational
+        requireFlightIsRegistered(flightKey)
+        requireFlightIsNotLanded(flightKey)
+        requirePassengerNotInsuredForFlight(flightKey, msg.sender)
+        requireLessThanMaxInsurance()
+    {
+        // sends data to FlightSuretyData contract to be processed
+        address(uint160(address(flightSuretyData))).transfer(msg.value);
+        flightSuretyData.buyInsurance(flightKey, msg.sender, msg.value, INSURANCE_PAYOUT);
+    }
+
+    function pay() external requireIsOperational {
+        // sends data to FlightSuretyData contract to be processed
+        flightSuretyData.pay(msg.sender);
+    }
+
 
 
 
