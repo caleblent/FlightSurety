@@ -47,25 +47,6 @@ contract FlightSuretyData {
     mapping(bytes32 => InsuranceClaim[]) public flightInsuranceClaims; // Flight insurance claims
     mapping(address => uint256) public withdrawableFunds; // Passenger insurance claims
 
-    // struct Fund {
-    //     uint256 amount;
-    //     string currency; // will be set to "ETH" by default, but it allows us to change it if so desired
-    // }
-
-    // struct Vote {
-    //     bool status;
-    // }
-
-    // mapping (address => Airline) airlines;
-    // mapping (address => Insurance) insurances;
-    // mapping (address => Fund) funds;
-    // mapping (address => Vote) votes;
-
-    // mapping (address => uint) private voteCount;
-    // mapping (address => uint256) private authorizedCaller;
-    // mapping (address => uint256) balances;
-    // address[] multiCalls = new address[](0);
-
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -96,9 +77,6 @@ contract FlightSuretyData {
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
 
-    // Modifiers help avoid duplication of code. They are typically used to validate something
-    // before a function is allowed to be executed.
-
     /**
     * @dev Modifier that requires the "operational" boolean variable to be "true"
     *      This is used on all state changing functions to pause the contract in 
@@ -119,6 +97,7 @@ contract FlightSuretyData {
         _;
     }
 
+    // Airline Registration
     modifier requireAirlineIsRegistered(address airline)
     {
         require(airlines[airline].isRegistered, "Airline is not registered");
@@ -127,6 +106,28 @@ contract FlightSuretyData {
     modifier requireAirlineIsNotRegistered(address airline)
     {
         require(!airlines[airline].isRegistered, "Airline is already registered");
+        _;
+    }
+
+    // Airline Funding
+    modifier requireAirlineIsFunded(address airline)
+    {
+        require(airlines[airline].isFunded, "Airline is not funded");
+        _;
+    }
+    modifier requireAirlineIsNotFunded(address airline)
+    {
+        require(!airlines[airline].isFunded, "Airline is already funded");
+        _;
+    }
+
+    // Flight Registration
+    modifier requireFlightIsRegistered(bytes32 flightKey) {
+        require(flights[flightKey].isRegistered, "Flight is not registered");
+        _;
+    }
+    modifier requireFlightIsNotRegistered(bytes32 flightKey) {
+        require(!flights[flightKey].isRegistered, "Flight is already registered");
         _;
     }
 
