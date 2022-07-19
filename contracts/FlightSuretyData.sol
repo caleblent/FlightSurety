@@ -9,8 +9,31 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    address private contractOwner;                                      // Account used to deploy contract
-    bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+    address private contractOwner;    // Account used to deploy contract
+    bool private operational = true;  // Blocks all state changes throughout the contract if false
+
+    struct Airline {
+        bool isRegistered;
+        bool isOperational;
+    }
+
+    struct Insurance {
+        address passenger;
+        uint256 amount;
+    }
+
+    struct Fund {
+        uint256 amount;
+    }
+
+    struct Vote {
+        bool status;
+    }
+
+    mapping (address => Airline) airlines;
+    mapping (address => Insurance) insurances;
+    mapping (address => Fund) funds;
+    mapping (address => Vote) votes;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -20,15 +43,12 @@ contract FlightSuretyData {
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
-    
+
     /**
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor
-                                (
-                                ) 
-                                public 
+    constructor () public 
     {
         contractOwner = msg.sender;
     }
@@ -104,10 +124,17 @@ contract FlightSuretyData {
     */   
     function registerAirline
                             (   
+                                address account,
+                                bool isOperational
                             )
                             external
-                            pure
+                            requireIsOperational
     {
+        _registerAirline(account, isOperational);
+    }
+
+    function _registerAirline (address account, bool isOperational) private {
+
     }
 
 

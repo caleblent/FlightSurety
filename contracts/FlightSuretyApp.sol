@@ -90,7 +90,7 @@ contract FlightSuretyApp {
     {
         contractOwner = msg.sender;
         flightSuretyData = FlightSuretyData(dataContract);
-        flightSuretyData._registerAirline(contractOwner, true);
+        flightSuretyData.registerAirline(contractOwner, true);
     }
 
     /********************************************************************************************/
