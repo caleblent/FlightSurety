@@ -193,7 +193,7 @@ contract FlightSuretyApp {
         // If less than required minimum airlines for voting process
         if (flightSuretyData.getRegisteredAirlineCount() <= AIRLINE_VOTING_THRESHOLD) {
             // sends data to FlightSuretyData contract to be processed
-            flightSuretyData.registerAirline(airline, msg.sender);
+            flightSuretyData.registerAirline(airline);
             return(success, 0, flightSuretyData.getRegisteredAirlineCount());
         } else {
             // Check for duplicates
@@ -209,7 +209,7 @@ contract FlightSuretyApp {
             // Check if enough votes to register airline
             if (pendingAirlines[airline].length >= flightSuretyData.getRegisteredAirlineCount().div(AIRLINE_REGISTRATION_REQUIRED_VOTES)) {
                 // sends data to FlightSuretyData contract to be processed
-                flightSuretyData.registerAirline(airline, msg.sender);
+                flightSuretyData.registerAirline(airline);
                 return(true, pendingAirlines[airline].length, flightSuretyData.getRegisteredAirlineCount());
             }
             return(false, pendingAirlines[airline].length, flightSuretyData.getRegisteredAirlineCount());
@@ -305,136 +305,6 @@ contract FlightSuretyApp {
         // sends data to FlightSuretyData contract to be processed
         flightSuretyData.pay(msg.sender);
     }
-
-
-
-
-    /**
-    * @dev Buy insurance for a flight
-    *
-    */   
-    function buy (address airline) external payable requireIsOperational
-    {
-        // Check if airline is operational
-        require(flightSuretyData.getAirlineOperatingStatus(airline),"Airline you are buying insurance from should be operational");
-        
-        // Check if amount range is greater than 0 ether and less than 1 ether.
-        require((msg.value > 0 ether) && (msg.value <= 1 ether), "You can not buy insurance of more than 1 ether or less than 0 ether");
-
-        // Save in contract instead
-        //airline.transfer(msg.value);
-        // Register insurance in database
-        flightSuretyData.registerInsurance(airline, msg.sender, msg.value);
-
-        //uint256 getFund = flightSuretyData.getAirlineFunding(airline);
-
-        emit PurchasedInsurance(airline, msg.sender, msg.value);
-
-    }
-
-    // Getter function for passenger credited amount
-    function getPassengerCreditedAmount() external returns(uint256) {
-        return flightSuretyData.getPassengerCredit(msg.sender);
-    }
-
-    /**
-     *  @dev Transfers eligible payout funds to insuree
-     *
-    */
-    function withdraw
-                            (
-                            )
-                            external
-                            requireIsOperational
-                            
-    {
-        require(flightSuretyData.getPassengerCredit(msg.sender) > 0, "No balance to withdraw");
-
-        uint256 withdrawalValue = flightSuretyData.withdraw(msg.sender);
-        // Transfer credit to passenger wallet
-        msg.sender.transfer(withdrawalValue);
-        
-        emit Withdrew(msg.sender, withdrawalValue);
-    }
-
-   /**
-    * @dev Register a future flight for insuring.
-    *
-    */  
-    function registerFlight (bytes32 flightCode, address _airline) external requireIsOperational
-    {
-        flights[flightCode] = Flight({
-            isRegistered: true,
-            statusCode: STATUS_CODE_UNKNOWN,
-            updatedTimestamp: now,
-            airline: _airline
-        });
-
-        emit RegisteredFlight(flightCode, _airline);
-    }
-    
-   /**
-    * @dev Called after oracle has updated flight status
-    *
-    */  
-    function processFlightStatus
-                                (
-                                    address airline,
-                                    string memory flight,
-                                    uint256 timestamp,
-                                    uint8 statusCode
-                                )
-                                internal
-                                requireIsOperational
-    {
-        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-        if (flights[flightKey].statusCode == 0) {
-            flights[flightKey].statusCode = statusCode;
-            if (statusCode == 20) {
-                // flightSuretyData.creditInsurees(airline, passenger, amount);
-            }
-        }
-        emit ProcessedFlightStatus(flightKey, statusCode);
-
-        // address passenger;
-        // uint256 amountPaid;
-        // (passenger,amountPaid) = flightSuretyData.getInsuredPassengerAmount(airline);
-
-        // require((passenger != address(0)) && (airline != address(0)), "'accounts' must be  valid address.");
-        // require(amountPaid > 0, "Passenger is not insured");
-
-        // // Only credit if flight delay is airline fault (airline late and late due to technical)
-        // if((statusCode == STATUS_CODE_LATE_AIRLINE) || (statusCode == STATUS_CODE_LATE_TECHNICAL)){
-        //     uint256 credit = amountPaid.mul(3).div(2);
-
-        //     flightSuretyData.creditInsurees(airline, passenger, credit);
-        //     emit CreditedInsurees(airline, passenger, credit);
-        // }
-    }
-
-
-    // Generate a request for oracles to fetch flight information
-    function fetchFlightStatus
-                        (
-                            address airline,
-                            string flight,
-                            uint256 timestamp                            
-                        )
-                        external
-                        requireIsOperational
-    {
-        uint8 index = getRandomIndex(msg.sender);
-
-        // Generate a unique key for storing the request
-        bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
-        oracleResponses[key] = ResponseInfo({
-                                                requester: msg.sender,
-                                                isOpen: true
-                                            });
-
-        emit OracleRequest(index, airline, flight, timestamp);
-    } 
-
 
 // region ORACLE MANAGEMENT
 
