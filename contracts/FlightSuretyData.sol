@@ -24,6 +24,7 @@ contract FlightSuretyData {
 
     struct Fund {
         uint256 amount;
+        string currency; // will be set to "ETH" by default, but it allows us to change it if so desired
     }
 
     struct Vote {
@@ -36,11 +37,18 @@ contract FlightSuretyData {
     mapping (address => Vote) votes;
 
     mapping (address => uint) private voteCount;
+    mapping (address => uint256) private authorizedCaller;
+    mapping (address => uint256) balances;
+    // address[] multiCalls = new address[](0);
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
+    event AuthorizedContract(address authContract);
+    event DeAuthorizedContract(address authContract);
+
+    event PaidInsuree(address payoutAddress, uint256 amount);
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -136,9 +144,57 @@ contract FlightSuretyData {
     // }
 
     // Vote struct
+    function getVoteCounter(address account) external requireIsOperational returns (uint) {
+        return voteCount[account];
+    }
+    function resetVoteCounter(address account) external requireIsOperational {
+        delete voteCount[account];
+    }
+    function getVoterStatus(address voter) external requireIsOperational returns (bool) {
+        return votes[voter].status;
+    }
+    function addVoters(address voter) external {
+        votes[voter] = Vote({
+            status: true
+        });
+    }
+    function addVoterCounter(address airline, uint count) external {
+        uint vote = voteCount[airline];
+        voteCount[airline] = vote.add(count);
+    }
 
+    // Insurance Registration
+    function registerInsurance(address airline, address passenger, uint256 amount) external requireIsOperational {
+        insurances[airline] = Insurance({
+            passenger: passenger,
+            amount: amount
+        });
+        uint256 getFund = funds[airline].amount;
+        funds[airline].amount = getFund.add(amount);
+    }
 
+    // Fund Recording
+    function fundAirline(address airline, uint256 amount) external {
+        funds[airline] = Fund({
+            amount: amount,
+            currency: "ETH"
+        });
+    }
 
+    function getAirlineFunding(address airline) external returns(uint256) {
+        return funds[airline].amount;
+    }
+
+    // Functions that deal with authorization + the contract caller
+    function authorizeCaller(address contractAddress) external requireContractOwner {
+        authorizedCaller[contractAddress] = 1;
+        emit AuthorizedContract(contractAddress);
+    }
+
+    function deauthorizeContract(address contractAddress) external requireContractOwner {
+        delete authorizedCaller[contractAddress];
+        emit DeAuthorizedContract(contractAddress);
+    }
 
    /**
     * @dev Add an airline to the registration queue
@@ -170,6 +226,7 @@ contract FlightSuretyData {
         return airlines[account].isRegistered;
     }
 
+    // Insurance payout functions
 
    /**
     * @dev Buy insurance for a flight
@@ -189,10 +246,21 @@ contract FlightSuretyData {
     */
     function creditInsurees
                                 (
+                                    address airline,
+                                    address passenger,
+                                    uint256 amount
                                 )
                                 external
-                                pure
+                                requireIsOperational
     {
+        // gets the amount * 3 / 2 ... same as 1.5x the amount
+        uint256 requiredAmount = insurances[airline].amount.mul(3).div(2);
+
+        require(insurances[airline].passenger == passenger, "Passenger is not insured");
+        require(requiredAmount == amount, "The amount credited is not as expected");
+        require((passenger != address(0)) && (airline != address(0)), "'accounts' must be a valid address");
+
+        balances[passenger] = amount;
     }
     
 
@@ -200,26 +268,33 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay
-                            (
-                            )
-                            external
-                            pure
-    {
+    function pay(address passenger) external payable requireIsOperational {
+        // stores the payout amount in withdrawalAmount
+        uint256 withdrawalAmount = balances[passenger];
+
+        // checks to see if funds are available
+        require(address(this).balance >= withdrawalAmount, "Contract has insufficient funds.");
+        require(withdrawalAmount > 0, "There are no funds available for withdrawal");
+
+        // removes entry from balances
+        delete balances[passenger];
+
+        // pays the passenger
+        passenger.transfer(withdrawalAmount);
+        emit PaidInsuree(passenger, withdrawalAmount);
     }
 
-   /**
-    * @dev Initial funding for the insurance. Unless there are too many delayed flights
-    *      resulting in insurance payouts, the contract should be self-sustaining
-    *
-    */   
-    function fund
-                            (   
-                            )
-                            public
-                            payable
-    {
+    function getInsuredPassengerAmount(address airline) external requireIsOperational 
+    returns(address, uint256) {
+        return (insurances[airline].passenger, insurances[airline].amount);
     }
+
+    function getPassengerCredit(address passenger) external requireIsOperational
+    returns(uint256) {
+        return balances[passenger];
+    }
+
+
 
     function getFlightKey
                         (
@@ -234,6 +309,18 @@ contract FlightSuretyData {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
+   /**
+    * @dev Initial funding for the insurance. Unless there are too many delayed flights
+    *      resulting in insurance payouts, the contract should be self-sustaining
+    *
+    */   
+    function fund
+                            (   
+                            )
+                            public
+                            payable
+    {
+    }
     /**
     * @dev Fallback function for funding smart contract.
     *
