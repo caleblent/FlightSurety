@@ -53,6 +53,9 @@ contract FlightSuretyApp {
     /********************************************************************************************/
 
     event RegisteredAirline(address account);
+    event FundedLines(address account, uint256 amount);
+    event PurchasedInsurance(address airline, address account, uint256 amount);
+    event Withdrew(address account , uint256 amount);
 
 
     /********************************************************************************************/
@@ -195,6 +198,115 @@ contract FlightSuretyApp {
         }
     }
 
+    /**
+    * @dev Approve registration of fifth and subsequent airlines
+    *
+    */
+
+    function approveAirlineRegistration(address airline, bool airline_vote) public requireIsOperational {
+        
+        require(!flightSuretyData.getAirlineRegistrationStatus(airline),"airline already registered");
+        require(flightSuretyData.getAirlineOperatingStatus(msg.sender),"airline not operational");
+        
+        if(airline_vote == true){
+            // Check and avoid duplicate vote for the same airline
+            bool isDuplicate = false;
+            uint incrementVote = 1;
+            isDuplicate = flightSuretyData.getVoterStatus(msg.sender);
+
+            // Check to avoid registering same airline multiple times
+            require(!isDuplicate, "Caller has already voted.");
+            flightSuretyData.addVoters(msg.sender);
+            flightSuretyData.addVoterCounter(airline, incrementVote);
+
+            }
+        vote_status = true;
+    }
+
+    /**
+    * @dev Initial funding for the insurance. Unless there are too many delayed flights
+    *      resulting in insurance payouts, the contract should be self-sustaining
+    *
+    */ 
+
+    function fund
+                (
+                )
+                public
+                payable
+                requireIsOperational
+    {
+        // vreify fund is 10 ether
+        require(msg.value == 10 ether,"Ether should be 10");
+
+        // Make sure airline has not yet been funded
+        require(!flightSuretyData.getAirlineOperatingStatus(msg.sender), "Airline is already funded");
+
+        // Save in contract instead
+        //contractOwner.transfer(msg.value); 
+
+        flightSuretyData.fundAirline(msg.sender, msg.value);
+
+        flightSuretyData.setAirlineOperatingStatus(msg.sender, true);
+
+        emit FundedLines(msg.sender, msg.value);
+        
+    }
+
+    /**
+    * @dev Buy insurance for a flight
+    *
+    */   
+    function buy
+                            (
+                                address airline
+                                
+                            )
+                            external
+                            payable
+                            requireIsOperational
+    {
+        // Check if airline is operational
+        require(flightSuretyData.getAirlineOperatingStatus(airline),"Airline you are buying insurance from should be operational");
+        
+        // Check if amount range is greater than 0 ether and less than 1 ether.
+        require((msg.value > 0 ether) && (msg.value <= 1 ether), "You can not buy insurance of more than 1 ether or less than 0 ether");
+
+        // Save in contract instead
+        //airline.transfer(msg.value);
+        // Register insurance in database
+        flightSuretyData.registerInsurance(airline, msg.sender, msg.value);
+
+        //uint256 getFund = flightSuretyData.getAirlineFunding(airline);
+
+        emit PurchasedInsurance(airline, msg.sender, msg.value);
+
+    }
+
+    // Getter function for passenger credited amount
+    function getPassengerCreditedAmount() external returns(uint256) {
+        return flightSuretyData.getPassengerCredit(msg.sender);
+    }
+
+    /**
+     *  @dev Transfers eligible payout funds to insuree
+     *
+    */
+    function withdraw
+                            (
+                            )
+                            external
+                            requireIsOperational
+                            
+    {
+        require(flightSuretyData.getPassengerCredit(msg.sender) > 0, "No balance to withdraw");
+
+        uint256 withdraw_value = flightSuretyData.withdraw(msg.sender);
+        // Transfer credit to passenger wallet
+        msg.sender.transfer(withdraw_value);
+        
+        emit Withdrew(msg.sender,withdraw_value);
+    }
 
    /**
     * @dev Register a future flight for insuring.

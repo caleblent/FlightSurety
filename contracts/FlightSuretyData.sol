@@ -276,7 +276,7 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay(address passenger) external payable requireIsOperational {
+    function withdraw(address passenger) external payable requireIsOperational {
         // stores the payout amount in withdrawalAmount
         uint256 withdrawalAmount = balances[passenger];
 
