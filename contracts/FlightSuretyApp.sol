@@ -181,48 +181,39 @@ contract FlightSuretyApp {
    /**
     * @dev Add an airline to the registration queue
     *
-    */   
-    function registerAirline(address airline) 
-        external 
-        requireIsOperational 
-        requireAirlineIsNotRegistered(airline)
-        requireAirlineIsOperational(airline)
-        returns(bool, bool)
+    * @return Success/Failure, Votes cast for airline, current member count
+    */
+    function registerAirline(address airline)
+        external
+        requireIsOperational
+        requireAirlineIsNotRegistered(airline) // Airline is not registered yet
+        requireAirlineIsFunded(msg.sender) // Voter is a funded airline
+        returns(bool success, uint256 votes, uint256 registeredAirlineCount)
     {
-        require(airline != address(0), "'account' must be a valid address.");
-
-        uint multiCallLength = flightSuretyData.multiCallsLength();
-
-        if (multiCallLength < M) {
-            // Register airline directly
-            flightSuretyData.registerAirline(airline, false);
-            emit RegisteredAirline(airline);
-            return(true, false); // registered without a vote
+        // If less than required minimum airlines for voting process
+        if (flightSuretyData.getRegisteredAirlineCount() <= AIRLINE_VOTING_THRESHOLD) {
+            flightSuretyData.registerAirline(airline, msg.sender);
+            return(success, 0, flightSuretyData.getRegisteredAirlineCount());
         } else {
-            if (vote_status){
-                uint voteCount = flightSuretyData.getVoteCounter(airline);
-
-                if(voteCount >= multiCallLength.div(2)){
-                    // Airline has been voted in
-                    flightSuretyData.registerAirline(airline, false);
-  
-                    vote_status = false;
-                    flightSuretyData.resetVoteCounter(airline);
-
-                    emit RegisteredAirline(airline);
-                    return(true, true);             
-
-                } else {
-                    // Airline has been voted out
-                    flightSuretyData.resetVoteCounter(airline);
-                    return(false, true); 
+            // Check for duplicates
+            bool isDuplicate = false;
+            for (uint256 i = 0; i < pendingAirlines[airline].length; i++) {
+                if (pendingAirlines[airline][i] == msg.sender) {
+                    isDuplicate = true;
+                    break;
                 }
-            } else {
-                // Requesting for a vote
-                return(false,false);                 
             }
+            require(!isDuplicate, "Duplicate vote, you cannot vote for the same airline twice.");
+            pendingAirlines[airline].push(msg.sender);
+            // Check if enough votes to register airline
+            if (pendingAirlines[airline].length >= flightSuretyData.getRegisteredAirlineCount().div(AIRLINE_REGISTRATION_REQUIRED_VOTES)) {
+                flightSuretyData.registerAirline(airline, msg.sender);
+                return(true, pendingAirlines[airline].length, flightSuretyData.getRegisteredAirlineCount());
+            }
+            return(false, pendingAirlines[airline].length, flightSuretyData.getRegisteredAirlineCount());
         }
     }
+
 
     /**
     * @dev Approve registration of fifth and subsequent airlines
