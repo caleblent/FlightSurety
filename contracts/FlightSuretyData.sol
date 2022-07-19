@@ -46,6 +46,8 @@ contract FlightSuretyData {
     mapping(bytes32 => InsuranceClaim[]) public flightInsuranceClaims; // Flight insurance claims
     mapping(address => uint256) public withdrawableFunds; // Passenger insurance claims
 
+    mapping(address => uint256) private authorizedCaller;
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -70,6 +72,8 @@ contract FlightSuretyData {
     event PassengerInsured(bytes32 flightKey, address passenger, uint256 amount, uint256 payout);
     event InsureeCredited(bytes32 flightKey, address passenger, uint256 amount);
     event PaidInsuree(address payoutAddress, uint256 amount);
+    event AuthorizedContract(address authContract);
+    event DeAuthorizedContract(address authContract);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -324,6 +328,17 @@ contract FlightSuretyData {
         withdrawableFunds[payoutAddress] = 0;
         address(uint160(address(payoutAddress))).transfer(amount);
         emit PaidInsuree(payoutAddress, amount);
+    }
+
+    // Authorize / Deauthorize Caller functions
+    function authorizeCaller(address contractAddress) external requireContractOwner {
+        authorizedCaller[contractAddress] = 1;
+        emit AuthorizedContract(contractAddress);
+    }
+
+    function deauthorizeContract(address contractAddress) external requireContractOwner {
+        delete authorizedCaller[contractAddress];
+        emit DeAuthorizedContract(contractAddress);
     }
 
     /**
