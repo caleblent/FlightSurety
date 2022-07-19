@@ -12,34 +12,73 @@ contract FlightSuretyData {
     address private contractOwner;    // Account used to deploy contract
     bool private operational = true;  // Blocks all state changes throughout the contract if false
 
+    // Airline variables
     struct Airline {
         bool isRegistered;
         bool isOperational;
+        bool isFunded;
+        uint256 funds;
     }
+    uint256 registeredAirlineCount = 0;
+    uint256 fundedAirlineCount = 0;
+    mapping(address => Airline) private airlines;
 
-    struct Insurance {
+    // Flight variables
+    struct Flight {
+        bool isRegistered;
+        bytes32 flightKey;
+        address airline;
+        string flightNumber;
+        uint8 statusCode;
+        uint256 timestamp;
+        string departureLocation;
+        string arrivalLocation;
+    }
+    mapping(bytes32 => Flight) public flights;
+    bytes32[] public registeredFlights;
+
+    // Insurance variables
+    struct InsuranceClaim {
         address passenger;
-        uint256 amount;
+        uint256 purchasePrice;
+        uint256 payoutPercentage;
+        bool credited;
     }
+    mapping(bytes32 => InsuranceClaim[]) public flightInsuranceClaims; // Flight insurance claims
+    mapping(address => uint256) public withdrawableFunds; // Passenger insurance claims
 
-    struct Fund {
-        uint256 amount;
-        string currency; // will be set to "ETH" by default, but it allows us to change it if so desired
+    // struct Fund {
+    //     uint256 amount;
+    //     string currency; // will be set to "ETH" by default, but it allows us to change it if so desired
+    // }
+
+    // struct Vote {
+    //     bool status;
+    // }
+
+    // mapping (address => Airline) airlines;
+    // mapping (address => Insurance) insurances;
+    // mapping (address => Fund) funds;
+    // mapping (address => Vote) votes;
+
+    // mapping (address => uint) private voteCount;
+    // mapping (address => uint256) private authorizedCaller;
+    // mapping (address => uint256) balances;
+    // address[] multiCalls = new address[](0);
+
+    /********************************************************************************************/
+    /*                                       CONSTRUCTOR                                        */
+    /********************************************************************************************/
+
+    /**
+    * @dev Constructor
+    *      The deploying account becomes contractOwner
+    */
+    constructor (address airline) public 
+    {
+        contractOwner = msg.sender;
+        airlines[airline] = Airline(true, true, false, 0);
     }
-
-    struct Vote {
-        bool status;
-    }
-
-    mapping (address => Airline) airlines;
-    mapping (address => Insurance) insurances;
-    mapping (address => Fund) funds;
-    mapping (address => Vote) votes;
-
-    mapping (address => uint) private voteCount;
-    mapping (address => uint256) private authorizedCaller;
-    mapping (address => uint256) balances;
-    address[] multiCalls = new address[](0);
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -50,18 +89,7 @@ contract FlightSuretyData {
 
     event PaidInsuree(address payoutAddress, uint256 amount);
 
-    /********************************************************************************************/
-    /*                                       CONSTRUCTOR                                        */
-    /********************************************************************************************/
 
-    /**
-    * @dev Constructor
-    *      The deploying account becomes contractOwner
-    */
-    constructor () public 
-    {
-        contractOwner = msg.sender;
-    }
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
