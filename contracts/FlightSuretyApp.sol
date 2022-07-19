@@ -57,6 +57,12 @@ contract FlightSuretyApp {
     FlightSuretyData flightSuretyData; 
 
     /********************************************************************************************/
+    /*                                       EVENT DEFINITIONS                                  */
+    /********************************************************************************************/
+
+    event SubmitOracleResponse(uint8 indexes, address airline, string flight, uint256 timestamp, uint8 statusCode);
+
+    /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
 
@@ -335,6 +341,12 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
+    function triggerOracleResponse(uint8 indexes, address airline, string  flight, uint256 timestamp, uint8 statusCode) external {	
+        emit SubmitOracleResponse(indexes, airline, flight, timestamp, statusCode);	
+    }	
+    function getResistration_fee()external returns(uint256){	
+        return REGISTRATION_FEE;	
+    }
 
     // Register an oracle with the contract
     function registerOracle
@@ -461,9 +473,12 @@ contract FlightSuretyApp {
         return random;
     }
 
+    function () external payable {
+    }
+
 // endregion
 
-}   
+}
 
 // Interface to FlightSuretyData.sol
 // NOTE: I have imported the FlightSuretyData.sol contract so this is not needed
