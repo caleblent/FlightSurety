@@ -24,6 +24,9 @@ contract FlightSuretyApp {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
+    uint constant M = 4;
+    bool private vote_status = false;
+
     // Flight status codees
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
@@ -49,7 +52,7 @@ contract FlightSuretyApp {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-
+    event RegisteredAirline(address account);
 
 
     /********************************************************************************************/
@@ -155,10 +158,41 @@ contract FlightSuretyApp {
         requireIsOperational 
         requireAirlineIsNotRegistered(airline)
         requireAirlineIsOperational(airline)
-        returns(bool success, uint256 votes, uint256 registeredAirlineCount)
+        returns(bool, bool)
     {
         require(airline != address(0), "'account' must be a valid address.");
-        return (success, 0, 0);
+
+        uint multiCallLength = flightSuretyData.multiCallsLength();
+
+        if (multiCallLength < M) {
+            // Register airline directly
+            flightSuretyData.registerAirline(airline, false);
+            emit RegisteredAirline(airline);
+            return(true, false); // registered without a vote
+        } else {
+            if (vote_status){
+                uint voteCount = flightSuretyData.getVoteCounter(airline);
+
+                if(voteCount >= multiCallLength.div(2)){
+                    // Airline has been voted in
+                    flightSuretyData.registerAirline(airline, false);
+  
+                    vote_status = false;
+                    flightSuretyData.resetVoteCounter(airline);
+
+                    emit RegisteredAirline(airline);
+                    return(true, true);             
+
+                } else {
+                    // Airline has been voted out
+                    flightSuretyData.resetVoteCounter(airline);
+                    return(false, true); 
+                }
+            } else {
+                // Requesting for a vote
+                return(false,false);                 
+            }
+        }
     }
 
 

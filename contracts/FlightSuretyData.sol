@@ -219,21 +219,8 @@ contract FlightSuretyData {
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
     *
-    */   
-    function registerAirline
-                            (   
-                                address account,
-                                bool _isOperational
-                            )
-                            external
-                            requireIsOperational
-    {
-        // passes data to the private function, which handles it
-        _registerAirline(account, _isOperational);
-    }
-
-    // handles the airline registration
-    function _registerAirline (address account, bool _isOperational) private {
+    */
+    function registerAirline (address account, bool _isOperational) external requireIsOperational {
         airlines[account] = Airline({
             isRegistered: true,
             isOperational: _isOperational
