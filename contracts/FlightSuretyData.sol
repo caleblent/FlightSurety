@@ -15,7 +15,6 @@ contract FlightSuretyData {
     // Airline variables
     struct Airline {
         bool isRegistered;
-        bool isOperational;
         bool isFunded;
         uint256 funds;
     }
@@ -168,81 +167,30 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
-    // Setter and Getter functions for data structures
-
-    // Airline struct
-    function getAirlineOperatingStatus(address account) external view requireIsOperational returns (bool) {
-        return airlines[account].isOperational;
+    // Getter/Setter functions
+    function isAirlineRegistered(address airline) public view requireIsOperational returns(bool) {
+        return airlines[airline].isRegistered;
     }
-    function setAirlineOperatingStatus(address account, bool status) external requireIsOperational {
-        airlines[account].isOperational = status;
+    function isAirlineFunded(address airline) public view returns(bool) {
+        return airlines[airline].isFunded;
     }
-    function getAirlineRegistrationStatus(address account) external view requireIsOperational returns (bool) {
-        return airlines[account].isRegistered;
+    function isFlightRegistered(bytes32 flightKey) public view returns(bool) {
+        return flights[flightKey].isRegistered;
     }
-    // function setAirlineRegistrationStatus(address account, bool status) external requireIsOperational {
-    //     airlines[account].isRegistered = status;
-    // }
-
-    // Vote struct
-    function getVoteCounter(address account) external view requireIsOperational returns (uint) {
-        return voteCount[account];
+    function isFlightLanded(bytes32 flightKey) public view returns(bool) {
+        if (flights[flightKey].statusCode > 0) {
+            return true;
+        }
+        return false;
     }
-    function resetVoteCounter(address account) external requireIsOperational {
-        delete voteCount[account];
-    }
-    function getVoterStatus(address voter) external view requireIsOperational returns (bool) {
-        return votes[voter].status;
-    }
-    function addVoters(address voter) external {
-        votes[voter] = Vote({
-            status: true
-        });
-    }
-    function addVoterCounter(address airline, uint count) external {
-        uint vote = voteCount[airline];
-        voteCount[airline] = vote.add(count);
-    }
-
-    // multiCalls
-    function setMultiCalls(address account) private {
-        multiCalls.push(account);
-    }
-    function multiCallsLength() external view requireIsOperational returns(uint) {
-        return multiCalls.length;
-    }
-
-    // Insurance Registration
-    function registerInsurance(address airline, address passenger, uint256 amount) external requireIsOperational {
-        insurances[airline] = Insurance({
-            passenger: passenger,
-            amount: amount
-        });
-        uint256 getFund = funds[airline].amount;
-        funds[airline].amount = getFund.add(amount);
-    }
-
-    // Fund Recording
-    function fundAirline(address airline, uint256 amount) external {
-        funds[airline] = Fund({
-            amount: amount,
-            currency: "ETH"
-        });
-    }
-
-    function getAirlineFunding(address airline) external view returns(uint256) {
-        return funds[airline].amount;
-    }
-
-    // Functions that deal with authorization + the contract caller
-    function authorizeCaller(address contractAddress) external requireContractOwner {
-        authorizedCaller[contractAddress] = 1;
-        emit AuthorizedContract(contractAddress);
-    }
-
-    function deauthorizeContract(address contractAddress) external requireContractOwner {
-        delete authorizedCaller[contractAddress];
-        emit DeAuthorizedContract(contractAddress);
+    function isPassengerInsuredForFlight(bytes32 flightKey, address passenger) public view returns(bool) {
+        InsuranceClaim[] memory insuranceClaims = flightInsuranceClaims[flightKey];
+        for (uint256 i = 0; i < insuranceClaims.length; i++) {
+            if (insuranceClaims[i].passenger == passenger) {
+                return true;
+            }
+        }
+        return false;
     }
 
    /**
@@ -250,13 +198,15 @@ contract FlightSuretyData {
     *      Can only be called from FlightSuretyApp contract
     *
     */
-    function registerAirline (address account, bool _isOperational) external requireIsOperational {
-        airlines[account] = Airline({
-            isRegistered: true,
-            isOperational: _isOperational
-        });
-
-        setMultiCalls(account);
+    function registerAirline (address airline) 
+        external 
+        requireIsOperational
+        requireAirlineIsNotRegistered(airline)
+        requireAirlineIsFunded(airline)
+    {
+        airlines[airline] = Airline(true, false, 0);
+        registeredAirlineCount = registeredAirlineCount.add(1);
+        emit AirlineRegistered(airline);
     }
 
     function isAirline (address account) external view returns (bool) {
@@ -348,29 +298,11 @@ contract FlightSuretyData {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
-   /**
-    * @dev Initial funding for the insurance. Unless there are too many delayed flights
-    *      resulting in insurance payouts, the contract should be self-sustaining
-    *
-    */   
-    function fund
-                            (   
-                            )
-                            public
-                            payable
-    {
-    }
     /**
     * @dev Fallback function for funding smart contract.
     *
     */
-    function() 
-                            external 
-                            payable 
-    {
-        fund();
-    }
-
-
+    function() external payable {}
+    
 }
 
