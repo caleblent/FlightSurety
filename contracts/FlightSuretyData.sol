@@ -54,10 +54,10 @@ contract FlightSuretyData {
     * @dev Constructor
     *      The deploying account becomes contractOwner
     */
-    constructor (address airline) public 
+    constructor () public 
     {
         contractOwner = msg.sender;
-        airlines[airline] = Airline(true, false, 0);
+        // airlines[airline] = Airline(true, false, 0);
     }
 
     /********************************************************************************************/
