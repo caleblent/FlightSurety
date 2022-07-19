@@ -240,19 +240,19 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy
-                            (                             
-                            )
-                            external
-                            payable
-    {
+    // function buy
+    //                         (                             
+    //                         )
+    //                         external
+    //                         payable
+    // {
 
-    }
+    // }
 
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees
+    function creditInsuree
                                 (
                                     address airline,
                                     address passenger,
@@ -304,8 +304,6 @@ contract FlightSuretyData {
     returns(uint256) {
         return balances[passenger];
     }
-
-
 
     function getFlightKey
                         (

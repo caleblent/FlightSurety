@@ -261,14 +261,7 @@ contract FlightSuretyApp {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy
-                            (
-                                address airline
-                                
-                            )
-                            external
-                            payable
-                            requireIsOperational
+    function buy (address airline) external payable requireIsOperational
     {
         // Check if airline is operational
         require(flightSuretyData.getAirlineOperatingStatus(airline),"Airline you are buying insurance from should be operational");
@@ -346,7 +339,7 @@ contract FlightSuretyApp {
         if (flights[flightKey].statusCode == 0) {
             flights[flightKey].statusCode = statusCode;
             if (statusCode == 20) {
-                // credit insurees
+                // flightSuretyData.creditInsurees(airline, passenger, amount);
             }
         }
         emit ProcessedFlightStatus(flightKey, statusCode);
