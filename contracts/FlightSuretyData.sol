@@ -57,7 +57,7 @@ contract FlightSuretyData {
     constructor (address airline) public 
     {
         contractOwner = msg.sender;
-        airlines[airline] = Airline(true, true, false, 0);
+        airlines[airline] = Airline(true, false, 0);
     }
 
     /********************************************************************************************/
@@ -207,8 +207,8 @@ contract FlightSuretyData {
     function getCountRegisteredFlights() public view requireIsOperational returns(uint256) {
         return registeredFlights.length;
     }
-    function getCountRegisteredFlights() public view requireIsOperational returns(uint256) {
-        return registeredFlights.length;
+    function getFlightKey(address airline, string memory flight, uint256 timestamp) internal pure returns(bytes32) {
+        return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
 
@@ -270,6 +270,18 @@ contract FlightSuretyData {
         emit FlightRegistered(flightKey);
     }
 
+    function processFlightStatus(address airline, string flight, uint256 timestamp, uint8 statusCode) external requireIsOperational {
+        bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+        require(!isFlightLanded(flightKey), "Flight has already landed.");
+        if (flights[flightKey].statusCode == 0) {
+            flights[flightKey].statusCode = statusCode;
+            if (statusCode == 20) {
+                creditInsurees(flightKey);
+            }
+        }
+        emit ProcessedFlightStatus(flightKey, statusCode);
+    }
+
     /**
     * @dev Buy insurance for a flight
     */
@@ -293,57 +305,26 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsuree
-                                (
-                                    address airline,
-                                    address passenger,
-                                    uint256 amount
-                                )
-                                external
-                                requireIsOperational
-    {
-        // gets the amount * 3 / 2 ... same as 1.5x the amount
-        uint256 requiredAmount = insurances[airline].amount.mul(3).div(2);
-
-        require(insurances[airline].passenger == passenger, "Passenger is not insured");
-        require(requiredAmount == amount, "The amount credited is not as expected");
-        require((passenger != address(0)) && (airline != address(0)), "'accounts' must be a valid address");
-
-        balances[passenger] = amount;
+    function creditInsurees(bytes32 flightKey) internal requireIsOperational {
+        for (uint256 i = 0; i < flightInsuranceClaims[flightKey].length; i++) {
+            InsuranceClaim memory insuranceClaim = flightInsuranceClaims[flightKey][i];
+            insuranceClaim.credited = true;
+            uint256 amount = insuranceClaim.purchasePrice.mul(insuranceClaim.payoutPercentage).div(100);
+            withdrawableFunds[insuranceClaim.passenger] = withdrawableFunds[insuranceClaim.passenger].add(amount);
+            emit InsureeCredited(flightKey, insuranceClaim.passenger, amount);
+        }
     }
-    
 
     /**
      *  @dev Transfers eligible payout funds to insuree
-     *
     */
-    function withdraw(address passenger) external payable requireIsOperational
-    returns (uint256) {
-        // stores the payout amount in withdrawalAmount
-        uint256 withdrawalAmount = balances[passenger];
-
-        // checks to see if funds are available
-        require(address(this).balance >= withdrawalAmount, "Contract has insufficient funds.");
-        require(withdrawalAmount > 0, "There are no funds available for withdrawal");
-
-        // removes entry from balances
-        delete balances[passenger];
-
-        // pays the passenger
-        passenger.transfer(withdrawalAmount);
-
-        emit PaidInsuree(passenger, withdrawalAmount);
-        return withdrawalAmount;
-    }
-
-    function getInsuredPassengerAmount(address airline) external view requireIsOperational 
-    returns(address, uint256) {
-        return (insurances[airline].passenger, insurances[airline].amount);
-    }
-
-    function getPassengerCredit(address passenger) external view requireIsOperational
-    returns(uint256) {
-        return balances[passenger];
+    function pay(address payoutAddress) external payable requireIsOperational {
+        uint256 amount = withdrawableFunds[payoutAddress];
+        require(address(this).balance >= amount, "Contract has insufficient funds.");
+        require(amount > 0, "There are no funds available for withdrawal");
+        withdrawableFunds[payoutAddress] = 0;
+        address(uint160(address(payoutAddress))).transfer(amount);
+        emit PaidInsuree(payoutAddress, amount);
     }
 
     /**
