@@ -6,11 +6,19 @@ pragma solidity ^0.4.24;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
+// Also must import the FlightSuretyData contract
+
+import "./FlightSuretyData.sol";
+
 /************************************************** */
 /* FlightSurety Smart Contract                      */
 /************************************************** */
 contract FlightSuretyApp {
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
+    using SafeMath for uint8; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
+
+    // Object that we will use to interact with the FlightSuretyApp contract.
+    FlightSuretyData flightSuretyData; 
 
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
@@ -26,12 +34,15 @@ contract FlightSuretyApp {
 
     address private contractOwner;          // Account used to deploy contract
 
+    bool private operational = true;        // Can be set to false to pause contract operations
+
     struct Flight {
         bool isRegistered;
         uint8 statusCode;
         uint256 updatedTimestamp;        
         address airline;
     }
+
     mapping(bytes32 => Flight) private flights;
 
  
@@ -49,9 +60,9 @@ contract FlightSuretyApp {
     */
     modifier requireIsOperational() 
     {
-         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");  
-        _;  // All modifiers require an "_" which indicates where the function body will be added
+         // Calls data contract's status
+        require(operational, "Contract is currently not operational");  
+        _;
     }
 
     /**
@@ -73,22 +84,33 @@ contract FlightSuretyApp {
     */
     constructor
                                 (
+                                    address dataContract
                                 ) 
                                 public 
     {
         contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyData(dataContract);
+        flightSuretyData._registerAirline(contractOwner, true);
     }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() 
+    // the getter function essentially
+    function isOperational()
                             public 
-                            pure 
+                            view 
                             returns(bool) 
     {
-        return true;  // Modify to call data contract's status
+        return operational;  // Modify to call data contract's status
+    }
+
+    function setOperationalStatus(bool status)
+                            external
+                            requireContractOwner
+    {
+        operational = status;
     }
 
     /********************************************************************************************/
@@ -104,10 +126,12 @@ contract FlightSuretyApp {
                             (   
                             )
                             external
-                            pure
-                            returns(bool success, uint256 votes)
+                            requireIsOperational
+                            returns(bool success, uint256 votes, uint256 registeredAirlineCount)
+                            
     {
-        return (success, 0);
+        if (flightSurey)
+        return (success, 0, 0);
     }
 
 
@@ -119,7 +143,7 @@ contract FlightSuretyApp {
                                 (
                                 )
                                 external
-                                pure
+                                requireIsOperational
     {
 
     }
@@ -136,7 +160,7 @@ contract FlightSuretyApp {
                                     uint8 statusCode
                                 )
                                 internal
-                                pure
+                                requireIsOperational
     {
     }
 
