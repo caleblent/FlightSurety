@@ -198,6 +198,21 @@ contract FlightSuretyData {
         require(account != address(0), "'account' must be a valid address");
         return airlines[account].isRegistered;
     }
+    function getRegisteredAirlineCount() public view requireIsOperational returns(uint256) {
+        return registeredAirlineCount;
+    }
+    function getFundedAirlineCount() public view requireIsOperational returns(uint256) {
+        return fundedAirlineCount;
+    }
+    function getCountRegisteredFlights() public view requireIsOperational returns(uint256) {
+        return registeredFlights.length;
+    }
+    function getCountRegisteredFlights() public view requireIsOperational returns(uint256) {
+        return registeredFlights.length;
+    }
+
+
+    // Main meat and potatoes functions
 
    /**
     * @dev Add an airline to the registration queue
@@ -307,19 +322,6 @@ contract FlightSuretyData {
     function getPassengerCredit(address passenger) external view requireIsOperational
     returns(uint256) {
         return balances[passenger];
-    }
-
-    function getFlightKey
-                        (
-                            address airline,
-                            string memory flight,
-                            uint256 timestamp
-                        )
-                        pure
-                        internal
-                        returns(bytes32) 
-    {
-        return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
     /**
