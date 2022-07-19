@@ -130,7 +130,7 @@ contract FlightSuretyApp {
                             returns(bool success, uint256 votes, uint256 registeredAirlineCount)
                             
     {
-        if (flightSurey)
+        
         return (success, 0, 0);
     }
 
