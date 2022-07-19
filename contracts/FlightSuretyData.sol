@@ -84,12 +84,13 @@ contract FlightSuretyData {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-    event AuthorizedContract(address authContract);
-    event DeAuthorizedContract(address authContract);
-
-    event PaidInsuree(address payoutAddress, uint256 amount);
-
-
+    event AirlineRegistered(address airline);
+    event AirlineFunded(address airline);
+    event FlightRegistered(bytes32 flightKey);
+    event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
+    event PassengerInsured(bytes32 flightKey, address passenger, uint256 amount, uint256 payout);
+    event InsureeCredited(bytes32 flightKey, address passenger, uint256 amount);
+    event PayInsuree(address payoutAddress, uint256 amount);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
