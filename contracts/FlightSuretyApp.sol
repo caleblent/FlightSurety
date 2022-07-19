@@ -60,7 +60,7 @@ contract FlightSuretyApp {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
 
-    event SubmitOracleResponse(uint8 indexes, address airline, string flight, uint256 timestamp, uint8 statusCode);
+    // NONE
 
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
@@ -336,17 +336,16 @@ contract FlightSuretyApp {
 
     event OracleReport(address airline, string flight, uint256 timestamp, uint8 status);
 
+    event OracleRegistered(address oracle);
+
     // Event fired when flight status request is submitted
     // Oracles track this and if they have a matching index
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
-    function triggerOracleResponse(uint8 indexes, address airline, string  flight, uint256 timestamp, uint8 statusCode) external {	
-        emit SubmitOracleResponse(indexes, airline, flight, timestamp, statusCode);	
-    }	
-    function getResistration_fee()external returns(uint256){	
-        return REGISTRATION_FEE;	
-    }
+    // function triggerOracleResponse(uint8 indexes, address airline, string  flight, uint256 timestamp, uint8 statusCode) external {	
+    //     emit SubmitOracleResponse(indexes, airline, flight, timestamp, statusCode);	
+    // }
 
     // Register an oracle with the contract
     function registerOracle
@@ -361,9 +360,10 @@ contract FlightSuretyApp {
         uint8[3] memory indexes = generateIndexes(msg.sender);
 
         oracles[msg.sender] = Oracle({
-                                        isRegistered: true,
-                                        indexes: indexes
-                                    });
+            isRegistered: true,
+            indexes: indexes
+        });
+        emit OracleRegistered(msg.sender);
     }
 
     function getMyIndexes
@@ -394,6 +394,7 @@ contract FlightSuretyApp {
                             uint8 statusCode
                         )
                         external
+                        requireIsOperational
     {
         require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
 
@@ -412,7 +413,7 @@ contract FlightSuretyApp {
 
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);
-        }
+        }	
     }
 
 
