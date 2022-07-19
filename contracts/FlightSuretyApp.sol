@@ -214,6 +214,43 @@ contract FlightSuretyApp {
         }
     }
 
+    /**
+     * @dev Fund a registered airline
+     */
+    function fundAirline()
+        external
+        payable
+        requireIsOperational
+        requireAirlineIsRegistered(msg.sender)
+        requireAirlineIsNotFunded(msg.sender)
+        requireSufficientFunding(AIRLINE_REGISTRATION_FEE)
+        returns(bool)
+    {
+        address(uint160(address(flightSuretyData))).transfer(AIRLINE_REGISTRATION_FEE);
+        return flightSuretyData.fundAirline(msg.sender, AIRLINE_REGISTRATION_FEE);
+    }
+
+   /**
+    * @dev Register a future flight for insuring.
+    *
+    */
+    function registerFlight (string flightNumber, uint256 timestamp, string departureLocation, string arrivalLocation)
+        external
+        requireIsOperational
+        requireAirlineIsFunded(msg.sender)
+    {
+        bytes32 flightKey = getFlightKey(msg.sender, flightNumber, timestamp);
+        flightSuretyData.registerFlight(
+            flightKey,
+            timestamp,
+            msg.sender,
+            flightNumber,
+            departureLocation,
+            arrivalLocation
+        );
+    }
+
+
 
     /**
     * @dev Approve registration of fifth and subsequent airlines
