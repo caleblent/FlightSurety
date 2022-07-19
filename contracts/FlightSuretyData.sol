@@ -35,6 +35,8 @@ contract FlightSuretyData {
     mapping (address => Fund) funds;
     mapping (address => Vote) votes;
 
+    mapping (address => uint) private voteCount;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -68,7 +70,7 @@ contract FlightSuretyData {
     modifier requireIsOperational() 
     {
         require(operational, "Contract is currently not operational");
-        _;  // All modifiers require an "_" which indicates where the function body will be added
+        _;
     }
 
     /**
@@ -117,6 +119,27 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    // Setter and Getter functions for data structures
+
+    // Airline struct
+    function getAirlineOperatingStatus(address account) external view requireIsOperational returns (bool) {
+        return airlines[account].isOperational;
+    }
+    function setAirlineOperatingStatus(address account, bool status) external requireIsOperational {
+        airlines[account].isOperational = status;
+    }
+    function getAirlineRegistrationStatus(address account) external view requireIsOperational returns (bool) {
+        return airlines[account].isRegistered;
+    }
+    // function setAirlineRegistrationStatus(address account, bool status) external requireIsOperational {
+    //     airlines[account].isRegistered = status;
+    // }
+
+    // Vote struct
+
+
+
+
    /**
     * @dev Add an airline to the registration queue
     *      Can only be called from FlightSuretyApp contract
@@ -130,11 +153,21 @@ contract FlightSuretyData {
                             external
                             requireIsOperational
     {
+        // passes data to the private function, which handles it
         _registerAirline(account, isOperational);
     }
 
+    // handles the airline registration
     function _registerAirline (address account, bool isOperational) private {
+        airlines[account] = Airline({
+            isRegistered: true,
+            isOperational: isOperational
+        });
+    }
 
+    function isAirline (address account) external view returns (bool) {
+        require(account != address(0), "'account' must be a valid address");
+        return airlines[account].isRegistered;
     }
 
 
