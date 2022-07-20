@@ -4,6 +4,14 @@ body {
     background-size: contain;
 }
 
+.bg-primary {
+    background-color: #68aaf9!important;
+}
+
+.text-success {
+    text-shadow: #000 -1px 2px 2px;
+}
+
 .container {
     margin-top: 80px;
     background-color: #000;
