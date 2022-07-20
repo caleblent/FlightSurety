@@ -263,10 +263,8 @@ contract FlightSuretyApp {
 
     /**
     * @dev Generate a request for oracles to fetch flight information
-    *
     */  
-    function fetchFlightStatus (address airline, string flight, uint256 timestamp, bytes32 flightKey)
-        external
+    function fetchFlightStatus (address airline, string flight, uint256 timestamp, bytes32 flightKey) external
         requireFlightIsRegistered(flightKey)
         requireFlightIsNotLanded(flightKey)
     {
@@ -343,10 +341,6 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
-    // function triggerOracleResponse(uint8 indexes, address airline, string  flight, uint256 timestamp, uint8 statusCode) external {	
-    //     emit SubmitOracleResponse(indexes, airline, flight, timestamp, statusCode);	
-    // }
-
     // Register an oracle with the contract
     function registerOracle
                             (
@@ -414,6 +408,7 @@ contract FlightSuretyApp {
             // Handle flight status as appropriate
             processFlightStatus(airline, flight, timestamp, statusCode);
         }	
+        emit OracleRequest(index, airline, flight, timestamp);
     }
 
 
@@ -423,8 +418,8 @@ contract FlightSuretyApp {
                             string flight,
                             uint256 timestamp
                         )
+                        public
                         pure
-                        internal
                         returns(bytes32) 
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));

@@ -4,7 +4,7 @@ var Test = require('../config/testConfig.js');
 
 contract('Oracles', async (accounts) => {
 
-  const TEST_ORACLES_COUNT = 5;
+  const TEST_ORACLES_COUNT = 10;
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -40,7 +40,17 @@ contract('Oracles', async (accounts) => {
     let timestamp = Math.floor(Date.now() / 1000);
 
     // Submit a request for oracles to get status information for a flight
-    await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp);
+
+    // var flightKey = await config.flightSuretyApp.getFlightKey(config.firstAirline, flight, timestamp);
+    // console.log("flightKey:"+flightKey+":::   Hopefully that's what we wanted")
+    // console.log("config.firstAirline:::"+config.firstAirline);
+    // console.log("config:::"+config.firstAirline);
+    // console.log(config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp));//, flightKey);
+
+    // Submit a request for oracles to get status information for a flight	
+    // await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp, flightKey);	
+
+
     // ACT
 
     // Since the Index assigned to each test account is opaque by design
@@ -55,12 +65,12 @@ contract('Oracles', async (accounts) => {
 
         try {
           // Submit a response...it will only be accepted if there is an Index match
-          await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, STATUS_CODE_ON_TIME, { from: accounts[a] });
+          await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, STATUS_CODE_ON_TIME);//, { from: accounts[a] });
 
         }
         catch(e) {
           // Enable this when debugging
-           console.log('\nError', idx, oracleIndexes[idx].toNumber(), flight, timestamp);
+          //  console.log('\nError', idx, oracleIndexes[idx].toNumber(), flight, timestamp);
         }
 
       }
