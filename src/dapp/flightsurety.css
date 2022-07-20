@@ -1,19 +1,31 @@
 body {
     background-image: url('flight.jpg'); /* Source: iStockPhoto */
     background-repeat: no-repeat;
-    background-size: cover;
+    background-size: contain;
 }
 
 .container {
-    margin-top: 400px;
+    margin-top: 80px;
     background-color: #000;
-    opacity: 0.9;
-    color: #fff;
+    opacity: 0.95;
     padding: 40px;
+}
+.container h1 {
+    
+    color: #fff;
+}
+
+div.btn-group {
+    width: inherit;
+    margin: 0 auto;
+    text-align: center;
+    display: inline-block;
 }
 
 .top-20 {
     margin-top: 20px;
+    padding: 10px;
+    border: 1px solid white;
 }
 
 h5 {
@@ -37,6 +49,19 @@ label.form {
     font-size: 14px;
     margin-right: 20px;
 }
-input {
-    margin-right: 30px;
+input, select {
+    margin: 10px 20px;
+}
+
+a:hover {
+    cursor: pointer;
+}
+.card {
+    margin: 10px;
+}
+button {
+    margin-bottom: 10px;
+}
+#operational-status:first-letter {
+    text-transform: capitalize;
 }
